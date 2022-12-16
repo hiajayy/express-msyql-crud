@@ -1,71 +1,73 @@
-const express = require('express');
+const router = require('express').Router();
 const connection = require('../connection');
-const router = express.Router();
-
 
 // Get all products
-router.get('/', (request, response, next) => {
+router.get('/', async (request, response) => {
     let query = "SELECT * FROM products";
-    connection.query(query, (error, result) => {
-        if (!error) {
-            return response.json({ success: true, message: "Get all products successfully.", data: result });
-        } else {
-            return response.status(500).json({ success: false, message: error, data: {} });
-        }
-    })
+    try {
+        const [rows] = await connection.query(query);
+        response.json({ "success": true, data: rows });
+    } catch (error) {
+        response.status(500).json({ "success": false, "message": "Something went wrong. Please try again after sometimes." });
+    }
+
 });
 
 // Store a product
-router.post('/', (request, response, next) => {
-    const product = request.body;
+router.post('/', async (request, response) => {
+    const { name, description, price } = request.body;
+    if (!name || !description || !price) {
+        response.status(422).json({ "status": false, "message": "All fields are required." });
+    }
     let query = "INSERT INTO products(name,description,price) VALUES(?,?,?)";
-    connection.query(query, [product.name, product.description, product.price], (error, result) => {
-        if (!error) {
-            return response.json({ success: true, message: "Product created successfully.", data: {} });
-        } else {
-            return response.status(500).json({ success: false, message: error, data: {} });
-        }
-    });
+    try {
+        const [result] = await connection.query(query, [name, description, price]);
+        const lastInsertID = result.insertId;
+        response.status(201).json({ "status": true, "data": { id: lastInsertID, name, description, price } });
+    } catch (error) {
+        response.status(500).json({ "success": false, "message": "Something went wrong. Please try again after sometimes." });
+    }
 });
 
 //Get single product
-router.get('/:id', (request, response, next) => {
+router.get('/:id', async (request, response) => {
     let productId = request.params.id;
     let query = "SELECT * FROM products WHERE id = ?";
-    connection.query(query, [productId], (error, result) => {
-        if (!error) {
-            return response.json({ success: true, message: "Get a single successfully.", data: result });
-        } else {
-            return response.status(500).json({ success: false, message: error, data: {} });
-        }
-    })
+    try {
+        const [rows] = await connection.query(query, [productId]);
+        response.json({ "status": true, "data": rows[0] });
+    } catch (error) {
+        response.status(500).json({ "success": false, "message": "Something went wrong. Please try again after sometimes." });
+    }
 });
 
 //update product
-router.patch('/:id', (request, response, next) => {
+router.patch('/:id', async (request, response) => {
     const productId = request.params.id;
-    const product = request.body;
-    let query = "UPDATE products SET name = ?, description = ?, price = ? WHERE id = ?";
-    connection.query(query, [product.name, product.description, product.price, productId], (error, result) => {
-        if (!error) {
-            return response.json({ success: true, message: "Product updated successfully.", data: {} });
-        } else {
-            return response.status(500).json({ success: false, message: error, data: {} });
-        }
-    })
+    const { name, description, price } = request.body;
+    if (!name || !description || !price) {
+        response.status(422).json({ "status": false, "message": "All fields are required." });
+    }
+    try {
+        let query = "UPDATE products SET name = ?, description = ?, price = ? WHERE id = ?";
+        await connection.query(query, [name, description, price, productId]);
+        response.json({ "status": true, "data": { id: parseInt(productId), name, description, price } });
+    } catch (error) {
+        response.status(500).json({ "success": false, "message": "Something went wrong. Please try again after sometimes." });
+    }
+
 });
 
 //delete product
-router.delete('/:id', (request, response, next) => {
+router.delete('/:id', async (request, response) => {
     const productId = request.params.id;
     let query = "DELETE FROM products where id = ?";
-    connection.query(query, [productId], (error, result) => {
-        if (!error) {
-            return response.json({ success: true, message: "Product deleted successfully.", data: {} });
-        } else {
-            return response.status(500).json({ success: false, message: error, data: {} });
-        }
-    });
+    try {
+        await connection.query(query, [productId]);
+        response.json({ "status": true });
+    } catch (error) {
+        response.status(500).json({ "success": false, "message": "Something went wrong. Please try again after sometimes." });
+    }
 });
 
 module.exports = router;
