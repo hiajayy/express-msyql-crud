@@ -2,18 +2,18 @@ const router = require('express').Router();
 const productController = require('../controllers/productController');
 
 // Get all products
-router.get('/', productController.index);
+router.get('/', productController.getAllProducts);
 
 // Store a product
-router.post('/', productController.store);
+router.post('/', productController.storeNewProduct);
 
 //Get single product
-router.get('/:id', productController.show);
+router.get('/:id', productController.getOneProduct);
 
 //update product
-router.patch('/:id', productController.update);
+router.patch('/:id', productController.updateOneProduct);
 
 //delete product
-router.delete('/:id', productController.destroy);
+router.delete('/:id', productController.deleteOneProduct);
 
 module.exports = router;
